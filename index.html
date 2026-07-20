@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Estoque - Restaurante</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Biblioteca html2pdf para gerar o PDF da lista de compras -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+    <header class="app-header">
+        <!-- Botão do menu flutuante / canto superior -->
+        <button class="menu-toggle" onclick="toggleMenu()" title="Menu"><i class="fa-solid fa-bars"></i></button>
+        
+        <!-- Logotipo bem grande e em destaque no topo -->
+        <div class="logo-area" onclick="document.getElementById('file-input').click()" title="Clique para trocar a logo">
+            <img id="logo-img" src="https://placehold.co/150x150?text=Sua+Logo" alt="Logo Restaurante">
+            <input type="file" id="file-input" accept="image/*" style="display:none" onchange="trocarLogo(event)">
+            <span class="edit-hint"><i class="fa-solid fa-pen"></i> Toque para alterar a logo</span>
+        </div>
+
+        <!-- Menu dropdown que abre ao clicar no botão -->
+        <nav id="nav-menu" class="nav-menu">
+            <button class="nav-btn active" onclick="switchTab('estoque')"><i class="fa-solid fa-boxes-stacked"></i> Estoque & Itens</button>
+            <button class="nav-btn" onclick="switchTab('compras')"><i class="fa-solid fa-cart-shopping"></i> Lista de Compras</button>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        
+        <!-- ABA 1: ESTOQUE E CADASTRO -->
+        <section id="tab-estoque" class="tab-section active">
+            <div class="card">
+                <h2>Gerenciar Categorias</h2>
+                <div class="form-inline">
+                    <input type="text" id="nova-categoria" placeholder="Nome da Categoria (ex: Grãos, Frios)">
+                    <button class="btn btn-primary" onclick="adicionarCategoria()">Adicionar Categoria</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Cadastrar Novo Item</h2>
+                <form id="form-item" onsubmit="salvarItem(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nome-item">Nome do Item:</label>
+                            <input type="text" id="nome-item" placeholder="Ex: Farinha de Trigo" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="categoria-item">Categoria:</label>
+                            <select id="categoria-item" required>
+                                <option value="">Selecione uma categoria</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantidade-item">Quantidade / Unidade:</label>
+                            <input type="text" id="quantidade-item" placeholder="Ex: 5 kg, 2 fardos" required>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="falta-item"> Marcar como "Em Falta" (Vai para lista de compras)
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> Salvar Item</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header-flex">
+                    <h2>Itens Cadastrados</h2>
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="pesquisa-estoque" placeholder="Pesquisar itens..." oninput="filtrarEstoque()">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Categoria</th>
+                                <th>Qtd / Unidade</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-estoque-corpo">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 2: LISTA DE COMPRAS & PDF -->
+        <section id="tab-compras" class="tab-section">
+            <div class="card">
+                <div class="card-header-flex">
+                    <h2>Lista de Compras (Itens em Falta)</h2>
+                    <div class="actions-flex">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="pesquisa-compras" placeholder="Pesquisar na lista..." oninput="filtrarCompras()">
+                        </div>
+                        <button class="btn btn-pdf" onclick="gerarPDF()"><i class="fa-solid fa-file-pdf"></i> Salvar em PDF</button>
+                    </div>
+                </div>
+
+                <!-- Elemento que será transformado em PDF -->
+                <div id="pdf-content" class="pdf-container">
+                    <div class="pdf-header-info">
+                        <h3 id="pdf-titulo-empresa">Lista de Compras - Restaurante</h3>
+                        <p>Data de Emissão: <span id="pdf-data"></span></p>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Selecionado</th>
+                                    <th>Item</th>
+                                    <th>Categoria</th>
+                                    <th>Qtd Atual / Necessária</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-compras-corpo">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
