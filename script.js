@@ -1,4 +1,5 @@
 // Configuração do Firebase
+// Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBrT5rwo37zNGpyjTxA6APfIpFZAjhMhfM",
   authDomain: "gestaorestaurante-31294.firebaseapp.com",
@@ -56,11 +57,18 @@ async function realizarCadastro(e) {
     if (!chave || !nomeRestaurante) return alert("Preencha todos os campos!");
 
     let jaExiste = false;
+    
     if (db) {
-        const docRef = db.collection("restaurantes").doc(chave);
-        const doc = await docRef.get();
-        if (doc.exists) jaExiste = true;
+        try {
+            const docRef = db.collection("restaurantes").doc(chave);
+            const doc = await docRef.get();
+            if (doc.exists) jaExiste = true;
+        } catch (error) {
+            console.warn("Aviso: Falha na conexão com a nuvem.");
+            db = null;
+        }
     }
+    
     if (!jaExiste && localStorage.getItem('dados_' + chave)) {
         jaExiste = true;
     }
@@ -97,7 +105,8 @@ async function carregarDadosDaNuvem(chave, mostrarAlertaErro = false) {
                 encontrado = true;
             }
         } catch (e) {
-            console.warn("Erro ao buscar no Firebase.");
+            console.warn("Aviso: Falha na conexão com a nuvem.");
+            db = null; 
         }
     }
     
@@ -152,7 +161,10 @@ function sairDaConta() {
 
 function salvarDados() {
     if (db && chaveAtual) {
-        db.collection("restaurantes").doc(chaveAtual).set(dadosRestaurante).catch(err => console.error(err));
+        db.collection("restaurantes").doc(chaveAtual).set(dadosRestaurante).catch(err => {
+            console.warn("Aviso: Não foi possível sincronizar com a nuvem.");
+            db = null;
+        });
     }
     if (chaveAtual) {
         localStorage.setItem('dados_' + chaveAtual, JSON.stringify(dadosRestaurante));
@@ -350,25 +362,21 @@ function deletarItem(id) {
     }
 }
 
-function renderizarCompras(filtro = '') {
+// Removi o filtro de busca da renderização das compras
+function renderizarCompras() {
     const tbody = document.getElementById('tabela-compras-corpo');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     const itensFalta = dadosRestaurante.itens.filter(item => item.emFalta);
-    
-    const itensFiltrados = itensFalta.filter(item => 
-        item.nome.toLowerCase().includes(filtro.toLowerCase())
-    );
 
-    if(itensFiltrados.length === 0) {
+    if(itensFalta.length === 0) {
         tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: #7f8c8d;">Nenhum item na lista de compras. 🎉</td></tr>`;
         return;
     }
 
-    itensFiltrados.forEach(item => {
+    itensFalta.forEach(item => {
         const tr = document.createElement('tr');
-        // Usamos setAttribute('value', this.value) para que o html2pdf capture o que foi digitado
         tr.innerHTML = `
             <td><strong>${item.nome}</strong></td>
             <td><input type="text" class="obs-input" placeholder="Ex: 2kg, marca X..." oninput="this.setAttribute('value', this.value);"></td>
@@ -381,9 +389,26 @@ function renderizarCompras(filtro = '') {
     document.getElementById('pdf-titulo-empresa').textContent = `Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}`;
 }
 
-function filtrarCompras() {
-    const termo = document.getElementById('pesquisa-compras').value;
-    renderizarCompras(termo);
+// Nova função para limpar a lista de compras inteira
+function limparListaCompras() {
+    const temItensNaLista = dadosRestaurante.itens.some(item => item.emFalta);
+    
+    if (!temItensNaLista) {
+        return alert("A lista de compras já está vazia!");
+    }
+
+    if(confirm("Deseja limpar toda a lista de compras? Todos os itens voltarão ao status de Disponível no estoque.")) {
+        dadosRestaurante.itens.forEach(item => {
+            item.emFalta = false;
+        });
+        
+        salvarDados();
+        
+        // Atualiza a tela de compras e o estoque
+        renderizarCompras();
+        const inputEstoque = document.getElementById('pesquisa-estoque');
+        renderizarEstoque(inputEstoque ? inputEstoque.value : '');
+    }
 }
 
 function gerarPDF() {
