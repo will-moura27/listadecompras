@@ -419,7 +419,6 @@ function gerarPDF() {
     html2pdf().from(element).set(opt).save();
 }
 
-// NOVA FUNÇÃO DE COMPARTILHAMENTO
 async function compartilharLista() {
     const itensFalta = dadosRestaurante.itens.filter(item => item.emFalta);
     
@@ -429,20 +428,17 @@ async function compartilharLista() {
 
     let texto = `🛒 *Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}*\n\n`;
     
-    // Varre a tabela para pegar também as observações digitadas
     const linhas = document.querySelectorAll('#tabela-compras-corpo tr');
     
     linhas.forEach(linha => {
         const nomeItem = linha.querySelector('strong').innerText;
         const obsInput = linha.querySelector('.obs-input');
         
-        // Se tiver digitado algo, junta com o nome
         const obs = (obsInput && obsInput.value.trim() !== '') ? ` - ${obsInput.value.trim()}` : '';
         
         texto += `▫️ ${nomeItem}${obs}\n`;
     });
 
-    // Tenta abrir a gaveta de compartilhamento nativa (Mobile)
     if (navigator.share) {
         try {
             await navigator.share({
@@ -453,12 +449,47 @@ async function compartilharLista() {
             console.log('Compartilhamento cancelado ou erro:', error);
         }
     } else {
-        // Fallback: Se estiver acessando pelo PC (onde a gaveta nativa pode não existir)
-        // Ele apenas copia para a área de transferência do Windows/Mac
         navigator.clipboard.writeText(texto).then(() => {
             alert("A lista foi copiada! Agora é só abrir o WhatsApp Web e colar na conversa.");
         }).catch(err => {
             alert("Erro ao tentar copiar a lista.");
         });
     }
+}
+
+// ==========================================
+// FUNÇÃO DO BOTÃO DE INSTALAR (PWA)
+// ==========================================
+let deferredPrompt;
+const btnInstalar = document.getElementById('btn-instalar');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Previne que o Chrome mostre o mini aviso padrão dele
+    e.preventDefault();
+    // Guarda o evento para usarmos no nosso botão
+    deferredPrompt = e;
+    
+    // Mostra o botão "Instalar App" na tela do restaurante
+    if (btnInstalar) {
+        btnInstalar.style.display = 'inline-flex';
+    }
+});
+
+if (btnInstalar) {
+    btnInstalar.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Mostra aquela janela nativa do celular perguntando se quer instalar
+            deferredPrompt.prompt();
+            
+            // Espera o usuário clicar em "Sim" ou "Não"
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('Aplicativo instalado!');
+            }
+            // Limpa o evento
+            deferredPrompt = null;
+            // Esconde o botão da tela, já que já foi instalado
+            btnInstalar.style.display = 'none';
+        }
+    });
 }
