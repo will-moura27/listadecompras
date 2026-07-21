@@ -22,6 +22,40 @@ body {
     min-height: 100vh;
 }
 
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+    background-color: var(--primary-color);
+}
+
+.auth-card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-align: center;
+}
+
+.auth-card h2 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.auth-card p {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.auth-card .form-group {
+    text-align: left;
+}
+
 .app-header {
     background-color: transparent;
     padding: 2rem 1rem 1.5rem 1rem;
@@ -198,11 +232,28 @@ input[type="text"], select {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 0.95rem;
+    width: 100%;
 }
 
 input[type="text"]:focus, select:focus {
     outline: none;
     border-color: var(--secondary-color);
+}
+
+/* Novo estilo para a caixa de observação na lista de compras */
+.obs-input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background-color: #f9fbfd;
+}
+
+.obs-input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    background-color: #fff;
 }
 
 .btn {
@@ -257,22 +308,13 @@ input[type="text"]:focus, select:focus {
     padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
 }
 
 .data-table th {
     background-color: #f1f2f6;
     font-weight: 600;
 }
-
-.badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.badge.ok { background-color: #d4edda; color: #155724; }
-.badge.missing { background-color: #f8d7da; color: #721c24; }
 
 .pdf-container {
     background: white;

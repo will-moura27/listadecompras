@@ -9,139 +9,176 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Biblioteca html2pdf para gerar o PDF da lista de compras -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Firebase SDK (Compat) para persistência em nuvem real -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <header class="app-header">
-        <!-- Botão do menu flutuante / canto superior -->
-        <button class="menu-toggle" onclick="toggleMenu()" title="Menu"><i class="fa-solid fa-bars"></i></button>
+    <!-- TELA DE AUTENTICAÇÃO / LOGIN -->
+    <div id="auth-screen" class="auth-container">
         
-        <!-- Logotipo bem grande e em destaque no topo -->
-        <div class="logo-area" onclick="document.getElementById('file-input').click()" title="Clique para trocar a logo">
-            <img id="logo-img" src="https://placehold.co/150x150?text=Sua+Logo" alt="Logo Restaurante">
-            <input type="file" id="file-input" accept="image/*" style="display:none" onchange="trocarLogo(event)">
-            <span class="edit-hint"><i class="fa-solid fa-pen"></i> Toque para alterar a logo</span>
+        <!-- CARD DE LOGIN -->
+        <div id="login-card" class="auth-card">
+            <h2>🍽️ Gestão Restaurante</h2>
+            <p>Entre com sua Chave de Acesso para sincronizar seus dados.</p>
+            
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="input-chave-login">Chave de Acesso:</label>
+                <input type="text" id="input-chave-login" placeholder="Digite sua chave">
+            </div>
+
+            <div class="auth-buttons">
+                <button class="btn btn-primary" onclick="entrarComChave()" style="width: 100%; justify-content: center; margin-bottom: 10px;">Entrar</button>
+                <button class="btn btn-success" onclick="mostrarTelaCadastro()" style="width: 100%; justify-content: center; margin-bottom: 10px;">Criar Novo Cadastro</button>
+                <button class="btn" onclick="esqueciChave()" style="width: 100%; justify-content: center; background: #7f8c8d; color: white;">Esqueci minha chave</button>
+            </div>
         </div>
 
-        <!-- Menu dropdown com a nova aba de Configurações -->
-        <nav id="nav-menu" class="nav-menu">
-            <button class="nav-btn active" onclick="switchTab('estoque')"><i class="fa-solid fa-boxes-stacked"></i> Estoque & Itens</button>
-            <button class="nav-btn" onclick="switchTab('compras')"><i class="fa-solid fa-cart-shopping"></i> Lista de Compras</button>
-            <button class="nav-btn" onclick="switchTab('configuracoes')"><i class="fa-solid fa-gear"></i> Configurações</button>
-        </nav>
-    </header>
-
-    <main class="main-content">
-        
-        <!-- ABA 1: ESTOQUE E CADASTRO -->
-        <section id="tab-estoque" class="tab-section active">
-            <div class="card">
-                <h2>Gerenciar Categorias</h2>
-                <div class="form-inline">
-                    <input type="text" id="nova-categoria" placeholder="Nome da Categoria (ex: Grãos, Frios)">
-                    <button class="btn btn-primary" onclick="adicionarCategoria()">Adicionar Categoria</button>
+        <!-- CARD DE CADASTRO -->
+        <div id="register-card" class="auth-card" style="display: none;">
+            <h2>📝 Novo Cadastro</h2>
+            <p>Preencha os dados abaixo para criar sua chave de acesso na nuvem.</p>
+            
+            <form onsubmit="realizarCadastro(event)">
+                <div class="form-group" style="margin-bottom: 1rem; text-align: left;">
+                    <label for="reg-nome-restaurante">Nome do Restaurante:</label>
+                    <input type="text" id="reg-nome-restaurante" placeholder="Ex: Cantina do João" required>
                 </div>
+                
+                <div class="form-group" style="margin-bottom: 1.5rem; text-align: left;">
+                    <label for="reg-chave">Crie sua Chave de Acesso:</label>
+                    <input type="text" id="reg-chave" placeholder="Ex: joao123" required>
+                </div>
+
+                <div class="auth-buttons">
+                    <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; margin-bottom: 10px;">Cadastrar e Entrar</button>
+                    <button type="button" class="btn" onclick="voltarParaLogin()" style="width: 100%; justify-content: center; background: #95a5a6; color: white;">Voltar ao Login</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- APLICAÇÃO PRINCIPAL -->
+    <div id="app-screen" style="display: none;">
+        <header class="app-header">
+            <button class="menu-toggle" onclick="toggleMenu()" title="Menu"><i class="fa-solid fa-bars"></i></button>
+            
+            <div class="logo-area" onclick="document.getElementById('file-input').click()" title="Clique para trocar a logo">
+                <img id="logo-img" src="https://placehold.co/150x150?text=Sua+Logo" alt="Logo Restaurante">
+                <input type="file" id="file-input" accept="image/*" style="display:none" onchange="trocarLogo(event)">
+                <span class="edit-hint"><i class="fa-solid fa-pen"></i> Toque para alterar a logo</span>
             </div>
 
-            <div class="card">
-                <h2>Cadastrar Novo Item</h2>
-                <form id="form-item" onsubmit="salvarItem(event)">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="nome-item">Nome do Item:</label>
-                            <input type="text" id="nome-item" placeholder="Ex: Farinha de Trigo" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="categoria-item">Categoria:</label>
-                            <select id="categoria-item" required>
-                                <option value="">Selecione uma categoria</option>
-                            </select>
-                        </div>
+            <nav id="nav-menu" class="nav-menu">
+                <button class="nav-btn active" onclick="switchTab('estoque')"><i class="fa-solid fa-boxes-stacked"></i> Estoque & Itens</button>
+                <button class="nav-btn" onclick="switchTab('compras')"><i class="fa-solid fa-cart-shopping"></i> Lista de Compras</button>
+                <button class="nav-btn" onclick="switchTab('configuracoes')"><i class="fa-solid fa-gear"></i> Configurações</button>
+                <button class="nav-btn" onclick="sairDaConta()" style="color: #c0392b;"><i class="fa-solid fa-right-from-bracket"></i> Sair / Trocar Chave</button>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <section id="tab-estoque" class="tab-section active">
+                <div class="card">
+                    <h2>Gerenciar Categorias</h2>
+                    <div class="form-inline">
+                        <input type="text" id="nova-categoria" placeholder="Nome da Categoria (ex: Grãos, Frios)">
+                        <button class="btn btn-primary" onclick="adicionarCategoria()">Adicionar Categoria</button>
                     </div>
-                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> Salvar Item</button>
-                </form>
-            </div>
-
-            <div class="card">
-                <div class="card-header-flex">
-                    <h2>Itens Cadastrados</h2>
-                    <div class="search-box">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="pesquisa-estoque" placeholder="Pesquisar itens..." oninput="filtrarEstoque()">
-                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Categoria</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-estoque-corpo">
-                            <!-- Preenchido via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
 
-        <!-- ABA 2: LISTA DE COMPRAS & PDF -->
-        <section id="tab-compras" class="tab-section">
-            <div class="card">
-                <div class="card-header-flex">
-                    <h2>Lista de Compras (Itens em Falta)</h2>
-                    <div class="actions-flex">
+                <div class="card">
+                    <h2>Cadastrar Novo Item</h2>
+                    <form id="form-item" onsubmit="salvarItem(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="nome-item">Nome do Item:</label>
+                                <input type="text" id="nome-item" placeholder="Ex: Farinha de Trigo" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="categoria-item">Categoria:</label>
+                                <select id="categoria-item" required>
+                                    <option value="">Selecione uma categoria</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> Salvar Item</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h2>Itens Cadastrados</h2>
                         <div class="search-box">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="pesquisa-compras" placeholder="Pesquisar na lista..." oninput="filtrarCompras()">
+                            <input type="text" id="pesquisa-estoque" placeholder="Pesquisar itens..." oninput="filtrarEstoque()">
                         </div>
-                        <button class="btn btn-pdf" onclick="gerarPDF()"><i class="fa-solid fa-file-pdf"></i> Salvar em PDF</button>
-                    </div>
-                </div>
-
-                <!-- Elemento que será transformado em PDF -->
-                <div id="pdf-content" class="pdf-container">
-                    <div class="pdf-header-info">
-                        <h3 id="pdf-titulo-empresa">Lista de Compras - Restaurante</h3>
-                        <p>Data de Emissão: <span id="pdf-data"></span></p>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Selecionado</th>
                                     <th>Item</th>
                                     <th>Categoria</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabela-compras-corpo">
-                                <!-- Preenchido via JS -->
-                            </tbody>
+                            <tbody id="tabela-estoque-corpo"></tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- ABA 3: CONFIGURAÇÕES -->
-        <section id="tab-configuracoes" class="tab-section">
-            <div class="card">
-                <h2>Configurações Visuais</h2>
-                <div class="form-group" style="max-width: 300px; margin-bottom: 1rem;">
-                    <label for="cor-principal">Cor Principal do App:</label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
-                        <input type="color" id="cor-principal" value="#2c3e50" onchange="mudarCorPrincipal(this.value)" style="width: 60px; height: 40px; border: none; cursor: pointer; border-radius: 4px;">
-                        <span id="codigo-cor" style="font-weight: 600; color: var(--text-color);">#2c3e50</span>
+            <section id="tab-compras" class="tab-section">
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h2>Lista de Compras</h2>
+                        <div class="actions-flex">
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="pesquisa-compras" placeholder="Pesquisar na lista..." oninput="filtrarCompras()">
+                            </div>
+                            <button class="btn btn-pdf" onclick="gerarPDF()"><i class="fa-solid fa-file-pdf"></i> Salvar em PDF</button>
+                        </div>
+                    </div>
+
+                    <div id="pdf-content" class="pdf-container">
+                        <div class="pdf-header-info">
+                            <h3 id="pdf-titulo-empresa">Lista de Compras - Restaurante</h3>
+                            <p>Data de Emissão: <span id="pdf-data"></span></p>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Observação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-compras-corpo"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="resetarCor()">Restaurar Cor Padrão</button>
-            </div>
-        </section>
+            </section>
 
-    </main>
+            <section id="tab-configuracoes" class="tab-section">
+                <div class="card">
+                    <h2>Configurações Visuais</h2>
+                    <div class="form-group" style="max-width: 300px; margin-bottom: 1rem;">
+                        <label for="cor-principal">Cor Principal do App:</label>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                            <input type="color" id="cor-principal" value="#2c3e50" onchange="mudarCorPrincipal(this.value)" style="width: 60px; height: 40px; border: none; cursor: pointer; border-radius: 4px;">
+                            <span id="codigo-cor" style="font-weight: 600; color: var(--text-color);">#2c3e50</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="resetarCor()">Restaurar Cor Padrão</button>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <script src="script.js"></script>
 </body>
