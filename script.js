@@ -1,12 +1,11 @@
-// Configuração do Firebase
-// Configuração do Firebase
+// Configuração real do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBrT5rwo37zNGpyjTxA6APfIpFZAjhMhfM",
-  authDomain: "gestaorestaurante-31294.firebaseapp.com",
-  projectId: "gestaorestaurante-31294",
-  storageBucket: "gestaorestaurante-31294.firebasestorage.app",
-  messagingSenderId: "368047144922",
-  appId: "1:368047144922:web:5f15beed8ad29776c1cae3"
+    apiKey: "AIzaSyBrT5rwo37zNGpyjTxA6APfIpFZAjhMhfM",
+    authDomain: "gestaorestaurante-31294.firebaseapp.com",
+    projectId: "gestaorestaurante-31294",
+    storageBucket: "gestaorestaurante-31294.firebasestorage.app",
+    messagingSenderId: "368047144922",
+    appId: "1:368047144922:web:5f15beed8ad29776c1cae3"
 };
 
 let db = null;
@@ -362,7 +361,6 @@ function deletarItem(id) {
     }
 }
 
-// Removi o filtro de busca da renderização das compras
 function renderizarCompras() {
     const tbody = document.getElementById('tabela-compras-corpo');
     if (!tbody) return;
@@ -389,7 +387,6 @@ function renderizarCompras() {
     document.getElementById('pdf-titulo-empresa').textContent = `Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}`;
 }
 
-// Nova função para limpar a lista de compras inteira
 function limparListaCompras() {
     const temItensNaLista = dadosRestaurante.itens.some(item => item.emFalta);
     
@@ -403,8 +400,6 @@ function limparListaCompras() {
         });
         
         salvarDados();
-        
-        // Atualiza a tela de compras e o estoque
         renderizarCompras();
         const inputEstoque = document.getElementById('pesquisa-estoque');
         renderizarEstoque(inputEstoque ? inputEstoque.value : '');
@@ -422,4 +417,48 @@ function gerarPDF() {
     };
 
     html2pdf().from(element).set(opt).save();
+}
+
+// NOVA FUNÇÃO DE COMPARTILHAMENTO
+async function compartilharLista() {
+    const itensFalta = dadosRestaurante.itens.filter(item => item.emFalta);
+    
+    if (itensFalta.length === 0) {
+        return alert("A lista de compras está vazia!");
+    }
+
+    let texto = `🛒 *Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}*\n\n`;
+    
+    // Varre a tabela para pegar também as observações digitadas
+    const linhas = document.querySelectorAll('#tabela-compras-corpo tr');
+    
+    linhas.forEach(linha => {
+        const nomeItem = linha.querySelector('strong').innerText;
+        const obsInput = linha.querySelector('.obs-input');
+        
+        // Se tiver digitado algo, junta com o nome
+        const obs = (obsInput && obsInput.value.trim() !== '') ? ` - ${obsInput.value.trim()}` : '';
+        
+        texto += `▫️ ${nomeItem}${obs}\n`;
+    });
+
+    // Tenta abrir a gaveta de compartilhamento nativa (Mobile)
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: `Lista de Compras - ${dadosRestaurante.nomeRestaurante}`,
+                text: texto
+            });
+        } catch (error) {
+            console.log('Compartilhamento cancelado ou erro:', error);
+        }
+    } else {
+        // Fallback: Se estiver acessando pelo PC (onde a gaveta nativa pode não existir)
+        // Ele apenas copia para a área de transferência do Windows/Mac
+        navigator.clipboard.writeText(texto).then(() => {
+            alert("A lista foi copiada! Agora é só abrir o WhatsApp Web e colar na conversa.");
+        }).catch(err => {
+            alert("Erro ao tentar copiar a lista.");
+        });
+    }
 }

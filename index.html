@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Estoque - Restaurante</title>
+    
+    <!-- Tags do PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192.png">
+
     <link rel="stylesheet" href="style.css">
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -136,8 +142,9 @@
                     <div class="card-header-flex">
                         <h2>Lista de Compras</h2>
                         <div class="actions-flex">
-                            <button class="btn btn-danger" onclick="limparListaCompras()"><i class="fa-solid fa-broom"></i> Limpar Lista</button>
-                            <button class="btn btn-pdf" onclick="gerarPDF()"><i class="fa-solid fa-file-pdf"></i> Salvar em PDF</button>
+                            <button class="btn btn-success" onclick="compartilharLista()"><i class="fa-solid fa-share-nodes"></i> Enviar</button>
+                            <button class="btn btn-pdf" onclick="gerarPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button class="btn btn-danger" onclick="limparListaCompras()"><i class="fa-solid fa-broom"></i> Limpar</button>
                         </div>
                     </div>
 
@@ -177,6 +184,16 @@
         </main>
     </div>
 
+    <!-- Script para registrar o PWA -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('PWA registrado com sucesso!', reg.scope))
+            .catch(err => console.error('Erro ao registrar PWA:', err));
+        });
+      }
+    </script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,0 +1,21 @@
+{
+  "name": "Gestão Restaurante",
+  "short_name": "Estoque",
+  "description": "Aplicativo de gestão de estoque e compras para o restaurante.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://placehold.co/512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
