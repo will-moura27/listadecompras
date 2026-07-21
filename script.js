@@ -1,6 +1,7 @@
 // Estrutura de Dados Principal (Carregada do LocalStorage ou vazias)
 let dadosRestaurante = JSON.parse(localStorage.getItem('dadosRestaurante')) || {
     logoUrl: "",
+    corPrincipal: "#2c3e50",
     categorias: ["Grãos e Cereais", "Carnes e Frios", "Hortifrúti", "Limpeza", "Bebidas"],
     itens: []
 };
@@ -8,6 +9,7 @@ let dadosRestaurante = JSON.parse(localStorage.getItem('dadosRestaurante')) || {
 // Inicialização ao carregar a página
 document.addEventListener('DOMContentLoaded', () => {
     carregarLogo();
+    aplicarCorPrincipal(dadosRestaurante.corPrincipal);
     atualizarSelectCategorias();
     renderizarEstoque();
     renderizarCompras();
@@ -69,6 +71,28 @@ function carregarLogo() {
     }
 }
 
+// Configuração de Cores
+function mudarCorPrincipal(corHex) {
+    dadosRestaurante.corPrincipal = corHex;
+    salvarDados();
+    aplicarCorPrincipal(corHex);
+}
+
+function aplicarCorPrincipal(corHex) {
+    // Altera a variável CSS global aplicada em elementos primários
+    document.documentElement.style.setProperty('--primary-color', corHex);
+    
+    // Atualiza os inputs visuais da aba de configurações se existirem
+    const colorInput = document.getElementById('cor-principal');
+    const codigoCorText = document.getElementById('codigo-cor');
+    if (colorInput) colorInput.value = corHex;
+    if (codigoCorText) codigoCorText.textContent = corHex;
+}
+
+function resetarCor() {
+    mudarCorPrincipal("#2c3e50");
+}
+
 // Gerenciar Categorias (Com validação para evitar repetidas)
 function adicionarCategoria() {
     const input = document.getElementById('nova-categoria');
@@ -124,7 +148,7 @@ function salvarItem(e) {
         id: Date.now().toString(),
         nome,
         categoria,
-        emFalta: false // Começa ok por padrão
+        emFalta: false
     };
 
     dadosRestaurante.itens.push(novoItem);

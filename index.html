@@ -23,10 +23,11 @@
             <span class="edit-hint"><i class="fa-solid fa-pen"></i> Toque para alterar a logo</span>
         </div>
 
-        <!-- Menu dropdown que abre ao clicar no botão -->
+        <!-- Menu dropdown com a nova aba de Configurações -->
         <nav id="nav-menu" class="nav-menu">
             <button class="nav-btn active" onclick="switchTab('estoque')"><i class="fa-solid fa-boxes-stacked"></i> Estoque & Itens</button>
             <button class="nav-btn" onclick="switchTab('compras')"><i class="fa-solid fa-cart-shopping"></i> Lista de Compras</button>
+            <button class="nav-btn" onclick="switchTab('configuracoes')"><i class="fa-solid fa-gear"></i> Configurações</button>
         </nav>
     </header>
 
@@ -122,6 +123,21 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- ABA 3: CONFIGURAÇÕES -->
+        <section id="tab-configuracoes" class="tab-section">
+            <div class="card">
+                <h2>Configurações Visuais</h2>
+                <div class="form-group" style="max-width: 300px; margin-bottom: 1rem;">
+                    <label for="cor-principal">Cor Principal do App:</label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                        <input type="color" id="cor-principal" value="#2c3e50" onchange="mudarCorPrincipal(this.value)" style="width: 60px; height: 40px; border: none; cursor: pointer; border-radius: 4px;">
+                        <span id="codigo-cor" style="font-weight: 600; color: var(--text-color);">#2c3e50</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="resetarCor()">Restaurar Cor Padrão</button>
             </div>
         </section>
 
