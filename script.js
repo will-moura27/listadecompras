@@ -1,8 +1,11 @@
 // Configuração do Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyDummyKeyForDemoPurposesOnly12345",
-    authDomain: "restaurante-app-demo.firebaseapp.com",
-    projectId: "restaurante-app-demo",
+  apiKey: "AIzaSyBrT5rwo37zNGpyjTxA6APfIpFZAjhMhfM",
+  authDomain: "gestaorestaurante-31294.firebaseapp.com",
+  projectId: "gestaorestaurante-31294",
+  storageBucket: "gestaorestaurante-31294.firebasestorage.app",
+  messagingSenderId: "368047144922",
+  appId: "1:368047144922:web:5f15beed8ad29776c1cae3"
 };
 
 let db = null;
