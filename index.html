@@ -56,15 +56,6 @@
                                 <option value="">Selecione uma categoria</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="quantidade-item">Quantidade / Unidade:</label>
-                            <input type="text" id="quantidade-item" placeholder="Ex: 5 kg, 2 fardos" required>
-                        </div>
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="falta-item"> Marcar como "Em Falta" (Vai para lista de compras)
-                            </label>
-                        </div>
                     </div>
                     <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> Salvar Item</button>
                 </form>
@@ -84,7 +75,6 @@
                             <tr>
                                 <th>Item</th>
                                 <th>Categoria</th>
-                                <th>Qtd / Unidade</th>
                                 <th>Status</th>
                                 <th>Ações</th>
                             </tr>
@@ -124,7 +114,6 @@
                                     <th>Selecionado</th>
                                     <th>Item</th>
                                     <th>Categoria</th>
-                                    <th>Qtd Atual / Necessária</th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-compras-corpo">

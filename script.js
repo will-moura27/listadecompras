@@ -69,14 +69,13 @@ function carregarLogo() {
     }
 }
 
-// Gerenciar Categorias (Com validação para evitar repetidas, ignorando maiúsculas/minúsculas)
+// Gerenciar Categorias (Com validação para evitar repetidas)
 function adicionarCategoria() {
     const input = document.getElementById('nova-categoria');
     const nomeCat = input.value.trim();
 
     if(!nomeCat) return alert("Digite o nome da categoria!");
 
-    // Validação: Verifica se já existe alguma categoria com o mesmo nome (comparando em minúsculas)
     const categoriaExiste = dadosRestaurante.categorias.some(
         cat => cat.toLowerCase() === nomeCat.toLowerCase()
     );
@@ -104,18 +103,15 @@ function atualizarSelectCategorias() {
     });
 }
 
-// Gerenciar Itens (Com validação para evitar itens repetidos)
+// Gerenciar Itens (Sem quantidade)
 function salvarItem(e) {
     e.preventDefault();
 
     const nome = document.getElementById('nome-item').value.trim();
     const categoria = document.getElementById('categoria-item').value;
-    const quantidade = document.getElementById('quantidade-item').value.trim();
-    const emFalta = document.getElementById('falta-item').checked;
 
     if(!nome) return alert("Digite o nome do item!");
 
-    // Validação: Verifica se já existe um item com exatamente o mesmo nome cadastrado
     const itemExiste = dadosRestaurante.itens.some(
         item => item.nome.toLowerCase() === nome.toLowerCase()
     );
@@ -128,8 +124,7 @@ function salvarItem(e) {
         id: Date.now().toString(),
         nome,
         categoria,
-        quantidade,
-        emFalta
+        emFalta: false // Começa ok por padrão
     };
 
     dadosRestaurante.itens.push(novoItem);
@@ -150,7 +145,7 @@ function renderizarEstoque(filtro = '') {
     );
 
     if(itensFiltrados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #7f8c8d;">Nenhum item encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #7f8c8d;">Nenhum item encontrado.</td></tr>`;
         return;
     }
 
@@ -159,15 +154,14 @@ function renderizarEstoque(filtro = '') {
         tr.innerHTML = `
             <td><strong>${item.nome}</strong></td>
             <td>${item.categoria}</td>
-            <td>${item.quantidade}</td>
             <td>
                 <span class="badge ${item.emFalta ? 'missing' : 'ok'}">
-                    ${item.emFalta ? 'Em Falta' : 'Disponível'}
+                    ${item.emFalta ? 'Faltando' : 'Disponível'}
                 </span>
             </td>
             <td>
                 <button class="btn ${item.emFalta ? 'btn-success' : 'btn-danger'}" style="padding: 4px 8px; font-size: 0.8rem;" onclick="toggleFalta('${item.id}')">
-                    <i class="fa-solid ${item.emFalta ? 'fa-check' : 'fa-triangle-exclamation'}"></i> ${item.emFalta ? 'Marcar OK' : 'Faltando'}
+                    <i class="fa-solid ${item.emFalta ? 'fa-check' : 'fa-cart-plus'}"></i> ${item.emFalta ? 'Marcar OK' : 'Comprar'}
                 </button>
                 <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="deletarItem('${item.id}')">
                     <i class="fa-solid fa-trash"></i>
@@ -214,7 +208,7 @@ function renderizarCompras(filtro = '') {
     );
 
     if(itensFiltrados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #7f8c8d;">Nenhum item faltando no momento. Parabéns! 🎉</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #7f8c8d;">Nenhum item na lista de compras. 🎉</td></tr>`;
         return;
     }
 
@@ -224,7 +218,6 @@ function renderizarCompras(filtro = '') {
             <td><input type="checkbox" class="check-compra" checked></td>
             <td><strong>${item.nome}</strong></td>
             <td>${item.categoria}</td>
-            <td>${item.quantidade}</td>
         `;
         tbody.appendChild(tr);
     });

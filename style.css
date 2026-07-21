@@ -205,14 +205,6 @@ input[type="text"]:focus, select:focus {
     border-color: var(--secondary-color);
 }
 
-.checkbox-group {
-    justify-content: center;
-    flex-direction: row !important;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-}
-
 .btn {
     padding: 8px 16px;
     border: none;
