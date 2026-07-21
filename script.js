@@ -69,13 +69,21 @@ function carregarLogo() {
     }
 }
 
-// Gerenciar Categorias
+// Gerenciar Categorias (Com validação para evitar repetidas, ignorando maiúsculas/minúsculas)
 function adicionarCategoria() {
     const input = document.getElementById('nova-categoria');
     const nomeCat = input.value.trim();
 
     if(!nomeCat) return alert("Digite o nome da categoria!");
-    if(dadosRestaurante.categorias.includes(nomeCat)) return alert("Essa categoria já existe!");
+
+    // Validação: Verifica se já existe alguma categoria com o mesmo nome (comparando em minúsculas)
+    const categoriaExiste = dadosRestaurante.categorias.some(
+        cat => cat.toLowerCase() === nomeCat.toLowerCase()
+    );
+
+    if (categoriaExiste) {
+        return alert("Erro: Já existe uma categoria com este nome!");
+    }
 
     dadosRestaurante.categorias.push(nomeCat);
     salvarDados();
@@ -96,7 +104,7 @@ function atualizarSelectCategorias() {
     });
 }
 
-// Gerenciar Itens
+// Gerenciar Itens (Com validação para evitar itens repetidos)
 function salvarItem(e) {
     e.preventDefault();
 
@@ -104,6 +112,17 @@ function salvarItem(e) {
     const categoria = document.getElementById('categoria-item').value;
     const quantidade = document.getElementById('quantidade-item').value.trim();
     const emFalta = document.getElementById('falta-item').checked;
+
+    if(!nome) return alert("Digite o nome do item!");
+
+    // Validação: Verifica se já existe um item com exatamente o mesmo nome cadastrado
+    const itemExiste = dadosRestaurante.itens.some(
+        item => item.nome.toLowerCase() === nome.toLowerCase()
+    );
+
+    if (itemExiste) {
+        return alert("Erro: Este item já está cadastrado no sistema!");
+    }
 
     const novoItem = {
         id: Date.now().toString(),
