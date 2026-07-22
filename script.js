@@ -426,7 +426,12 @@ async function compartilharLista() {
         return alert("A lista de compras está vazia!");
     }
 
-    let texto = `🛒 *Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}*\n\n`;
+    // Pega a data atual formatada
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+    
+    // Monta o cabeçalho do texto com a data incluída
+    let texto = `🛒 *Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}*\n`;
+    texto += `📅 *Data:* ${dataAtual}\n\n`;
     
     const linhas = document.querySelectorAll('#tabela-compras-corpo tr');
     
@@ -464,12 +469,9 @@ let deferredPrompt;
 const btnInstalar = document.getElementById('btn-instalar');
 
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Previne que o Chrome mostre o mini aviso padrão dele
     e.preventDefault();
-    // Guarda o evento para usarmos no nosso botão
     deferredPrompt = e;
     
-    // Mostra o botão "Instalar App" na tela do restaurante
     if (btnInstalar) {
         btnInstalar.style.display = 'inline-flex';
     }
@@ -478,17 +480,13 @@ window.addEventListener('beforeinstallprompt', (e) => {
 if (btnInstalar) {
     btnInstalar.addEventListener('click', async () => {
         if (deferredPrompt) {
-            // Mostra aquela janela nativa do celular perguntando se quer instalar
             deferredPrompt.prompt();
             
-            // Espera o usuário clicar em "Sim" ou "Não"
             const { outcome } = await deferredPrompt.userChoice;
             if (outcome === 'accepted') {
                 console.log('Aplicativo instalado!');
             }
-            // Limpa o evento
             deferredPrompt = null;
-            // Esconde o botão da tela, já que já foi instalado
             btnInstalar.style.display = 'none';
         }
     });
