@@ -8,15 +8,12 @@ const firebaseConfig = {
     appId: "1:368047144922:web:5f15beed8ad29776c1cae3"
 };
 
-let db = null;
-try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-} catch (e) {
-    console.warn("Firebase rodando em modo local.");
-}
+// Inicialização Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-let chaveAtual = localStorage.getItem('chaveRestaurante') || null;
+let usuarioAtualUID = null;
 let dadosRestaurante = {
     nomeRestaurante: "Meu Restaurante",
     logoUrl: "",
@@ -25,113 +22,160 @@ let dadosRestaurante = {
     itens: []
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (chaveAtual) {
-        carregarDadosDaNuvem(chaveAtual, false);
+// ==========================================
+// MONITOR DE SESSÃO
+// ==========================================
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        if (user.emailVerified) {
+            usuarioAtualUID = user.uid;
+            await carregarDadosDaNuvem(usuarioAtualUID);
+            liberarApp();
+        } else {
+            alert("⚠️ Seu e-mail ainda não foi verificado!\nAcesse sua caixa de entrada, clique no link que enviamos e tente entrar novamente.");
+            auth.signOut();
+        }
+    } else {
+        usuarioAtualUID = null;
+        document.getElementById('app-screen').style.display = 'none';
+        document.getElementById('auth-screen').style.display = 'flex';
+        voltarParaLogin();
     }
 });
 
+// ==========================================
+// FUNÇÕES DE NAVEGAÇÃO DE AUTENTICAÇÃO
+// ==========================================
 function mostrarTelaCadastro() {
     document.getElementById('login-card').style.display = 'none';
+    document.getElementById('migrate-card').style.display = 'none';
     document.getElementById('register-card').style.display = 'block';
+}
+
+function mostrarTelaMigracao() {
+    document.getElementById('login-card').style.display = 'none';
+    document.getElementById('register-card').style.display = 'none';
+    document.getElementById('migrate-card').style.display = 'block';
 }
 
 function voltarParaLogin() {
     document.getElementById('register-card').style.display = 'none';
+    document.getElementById('migrate-card').style.display = 'none';
     document.getElementById('login-card').style.display = 'block';
 }
 
-async function entrarComChave() {
-    const chave = document.getElementById('input-chave-login').value.trim();
-    if (!chave) return alert("Digite a chave de acesso!");
-
-    await carregarDadosDaNuvem(chave, true);
-}
-
+// ==========================================
+// FUNÇÕES DE AÇÃO DE AUTENTICAÇÃO
+// ==========================================
 async function realizarCadastro(e) {
     e.preventDefault();
     const nomeRestaurante = document.getElementById('reg-nome-restaurante').value.trim();
-    const chave = document.getElementById('reg-chave').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const senha = document.getElementById('reg-senha').value.trim();
 
-    if (!chave || !nomeRestaurante) return alert("Preencha todos os campos!");
+    try {
+        const credencial = await auth.createUserWithEmailAndPassword(email, senha);
+        await credencial.user.sendEmailVerification();
+        
+        dadosRestaurante.nomeRestaurante = nomeRestaurante;
+        await db.collection("restaurantes").doc(credencial.user.uid).set(dadosRestaurante);
 
-    let jaExiste = false;
-    
-    if (db) {
-        try {
-            const docRef = db.collection("restaurantes").doc(chave);
-            const doc = await docRef.get();
-            if (doc.exists) jaExiste = true;
-        } catch (error) {
-            console.warn("Aviso: Falha na conexão com a nuvem.");
-            db = null;
-        }
+        alert("✅ Cadastro realizado!\n\nEnviamos um link de confirmação para o seu e-mail. Você precisa clicar nele antes de entrar.");
+        auth.signOut();
+        voltarParaLogin();
+        
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') alert("Este e-mail já está cadastrado.");
+        else alert("Erro ao cadastrar: " + error.message);
     }
-    
-    if (!jaExiste && localStorage.getItem('dados_' + chave)) {
-        jaExiste = true;
-    }
-
-    if (jaExiste) {
-        return alert("Erro: Esta chave já está em uso! Escolha outra.");
-    }
-
-    dadosRestaurante = {
-        nomeRestaurante: nomeRestaurante,
-        logoUrl: "",
-        corPrincipal: "#2c3e50",
-        categorias: ["Grãos e Cereais", "Carnes e Frios", "Hortifrúti", "Limpeza", "Bebidas"],
-        itens: []
-    };
-
-    chaveAtual = chave;
-    localStorage.setItem('chaveRestaurante', chave);
-    salvarDados();
-
-    liberarApp();
-    alert("Cadastro realizado com sucesso!");
 }
 
-async function carregarDadosDaNuvem(chave, mostrarAlertaErro = false) {
-    let encontrado = false;
+async function fazerLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const senha = document.getElementById('login-senha').value.trim();
 
-    if (db) {
-        try {
-            const docRef = db.collection("restaurantes").doc(chave);
-            const doc = await docRef.get();
-            if (doc.exists) {
-                dadosRestaurante = doc.data();
-                encontrado = true;
-            }
-        } catch (e) {
-            console.warn("Aviso: Falha na conexão com a nuvem.");
-            db = null; 
-        }
+    try {
+        await auth.signInWithEmailAndPassword(email, senha);
+    } catch (error) {
+        alert("E-mail ou senha incorretos.");
     }
-    
-    if (!encontrado) {
-        let salvoLocal = localStorage.getItem('dados_' + chave);
-        if (salvoLocal) {
-            dadosRestaurante = JSON.parse(salvoLocal);
-            encontrado = true;
-        }
-    }
+}
 
-    if (encontrado) {
-        chaveAtual = chave;
-        localStorage.setItem('chaveRestaurante', chave);
-        liberarApp();
-    } else {
-        if (mostrarAlertaErro) {
-            alert("Chave não encontrada! Verifique se digitou corretamente ou crie um novo cadastro.");
+async function migrarContaAntiga(e) {
+    e.preventDefault();
+    const chaveAntiga = document.getElementById('mig-chave').value.trim();
+    const email = document.getElementById('mig-email').value.trim();
+    const senha = document.getElementById('mig-senha').value.trim();
+
+    try {
+        const docRefAntigo = db.collection("restaurantes").doc(chaveAntiga);
+        const doc = await docRefAntigo.get();
+
+        if (!doc.exists) {
+            return alert("❌ Chave antiga não encontrada! Verifique se digitou exatamente como usava antes.");
+        }
+
+        const credencial = await auth.createUserWithEmailAndPassword(email, senha);
+        await credencial.user.sendEmailVerification();
+
+        const dadosAntigos = doc.data();
+        await db.collection("restaurantes").doc(credencial.user.uid).set(dadosAntigos);
+
+        await docRefAntigo.delete();
+        localStorage.removeItem('chaveRestaurante');
+
+        alert("🎉 Conta atualizada com sucesso!\nSeus dados foram salvos.\n\nEnviamos um link de confirmação para o seu e-mail. Clique nele para poder acessar seu estoque.");
+        
+        auth.signOut();
+        voltarParaLogin();
+
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("Este e-mail já está em uso. Tente outro ou faça login.");
+        } else {
+            alert("Erro na migração: " + error.message);
         }
     }
 }
 
-function esqueciChave() {
-    const chaveInformada = prompt("Para recuperar seu usuário, digite a sua Chave de Acesso antiga:");
-    if (chaveInformada) {
-        carregarDadosDaNuvem(chaveInformada.trim(), true);
+function sairDaConta() {
+    if (confirm("Deseja realmente sair da sua conta?")) {
+        auth.signOut();
+    }
+}
+
+function esqueciSenha() {
+    const emailInformado = prompt("Digite o e-mail cadastrado para receber o link de redefinição:");
+    if (emailInformado) {
+        auth.sendPasswordResetEmail(emailInformado.trim())
+            .then(() => alert("E-mail de recuperação enviado! Verifique sua caixa de entrada."))
+            .catch(err => alert("Erro ao enviar e-mail."));
+    }
+}
+
+// ==========================================
+// FUNÇÕES DE DADOS E INTERFACE (CLOUD FIREBASE)
+// ==========================================
+async function carregarDadosDaNuvem(uid) {
+    try {
+        const docRef = db.collection("restaurantes").doc(uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+            dadosRestaurante = doc.data();
+        } else {
+            await salvarDados();
+        }
+    } catch (e) {
+        console.warn("Falha na leitura do banco.", e);
+    }
+}
+
+function salvarDados() {
+    if (usuarioAtualUID) {
+        db.collection("restaurantes").doc(usuarioAtualUID).set(dadosRestaurante).catch(err => {
+            console.error("Erro ao salvar:", err);
+        });
     }
 }
 
@@ -144,30 +188,6 @@ function liberarApp() {
     atualizarSelectCategorias();
     renderizarEstoque();
     renderizarCompras();
-}
-
-function sairDaConta() {
-    if (confirm("Deseja sair da sua conta atual?")) {
-        localStorage.removeItem('chaveRestaurante');
-        chaveAtual = null;
-        document.getElementById('app-screen').style.display = 'none';
-        document.getElementById('auth-screen').style.display = 'flex';
-        document.getElementById('login-card').style.display = 'block';
-        document.getElementById('register-card').style.display = 'none';
-        document.getElementById('input-chave-login').value = '';
-    }
-}
-
-function salvarDados() {
-    if (db && chaveAtual) {
-        db.collection("restaurantes").doc(chaveAtual).set(dadosRestaurante).catch(err => {
-            console.warn("Aviso: Não foi possível sincronizar com a nuvem.");
-            db = null;
-        });
-    }
-    if (chaveAtual) {
-        localStorage.setItem('dados_' + chaveAtual, JSON.stringify(dadosRestaurante));
-    }
 }
 
 function toggleMenu() {
@@ -197,9 +217,7 @@ function switchTab(tabId) {
     const navMenu = document.getElementById('nav-menu');
     if (navMenu) navMenu.classList.remove('show');
 
-    if(tabId === 'compras') {
-        renderizarCompras();
-    }
+    if(tabId === 'compras') renderizarCompras();
 }
 
 function trocarLogo(event) {
@@ -236,9 +254,7 @@ function aplicarCorPrincipal(corHex) {
     if (codigoCorText) codigoCorText.textContent = corHex;
 }
 
-function resetarCor() {
-    mudarCorPrincipal("#2c3e50");
-}
+function resetarCor() { mudarCorPrincipal("#2c3e50"); }
 
 function adicionarCategoria() {
     const input = document.getElementById('nova-categoria');
@@ -246,13 +262,8 @@ function adicionarCategoria() {
 
     if(!nomeCat) return alert("Digite o nome da categoria!");
 
-    const categoriaExiste = dadosRestaurante.categorias.some(
-        cat => cat.toLowerCase() === nomeCat.toLowerCase()
-    );
-
-    if (categoriaExiste) {
-        return alert("Erro: Já existe uma categoria com este nome!");
-    }
+    const categoriaExiste = dadosRestaurante.categorias.some(cat => cat.toLowerCase() === nomeCat.toLowerCase());
+    if (categoriaExiste) return alert("Erro: Já existe uma categoria com este nome!");
 
     dadosRestaurante.categorias.push(nomeCat);
     salvarDados();
@@ -276,30 +287,16 @@ function atualizarSelectCategorias() {
 
 function salvarItem(e) {
     e.preventDefault();
-
     const nome = document.getElementById('nome-item').value.trim();
     const categoria = document.getElementById('categoria-item').value;
 
     if(!nome) return alert("Digite o nome do item!");
 
-    const itemExiste = dadosRestaurante.itens.some(
-        item => item.nome.toLowerCase() === nome.toLowerCase()
-    );
+    const itemExiste = dadosRestaurante.itens.some(item => item.nome.toLowerCase() === nome.toLowerCase());
+    if (itemExiste) return alert("Erro: Este item já está cadastrado no sistema!");
 
-    if (itemExiste) {
-        return alert("Erro: Este item já está cadastrado no sistema!");
-    }
-
-    const novoItem = {
-        id: Date.now().toString(),
-        nome,
-        categoria,
-        emFalta: false
-    };
-
-    dadosRestaurante.itens.push(novoItem);
+    dadosRestaurante.itens.push({ id: Date.now().toString(), nome, categoria, emFalta: false });
     salvarDados();
-
     document.getElementById('form-item').reset();
     renderizarEstoque();
     alert("Item cadastrado com sucesso!");
@@ -339,8 +336,7 @@ function renderizarEstoque(filtro = '') {
 }
 
 function filtrarEstoque() {
-    const termo = document.getElementById('pesquisa-estoque').value;
-    renderizarEstoque(termo);
+    renderizarEstoque(document.getElementById('pesquisa-estoque').value);
 }
 
 function toggleFalta(id) {
@@ -384,21 +380,17 @@ function renderizarCompras() {
 
     const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
     document.getElementById('pdf-data').textContent = new Date().toLocaleDateString('pt-BR', options);
-    document.getElementById('pdf-titulo-empresa').textContent = `Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}`;
+    
+    // Atualiza o título do PDF com a nova marca
+    document.getElementById('pdf-titulo-empresa').textContent = `Lista de Compras - Stoka (${dadosRestaurante.nomeRestaurante || 'Restaurante'})`;
 }
 
 function limparListaCompras() {
     const temItensNaLista = dadosRestaurante.itens.some(item => item.emFalta);
-    
-    if (!temItensNaLista) {
-        return alert("A lista de compras já está vazia!");
-    }
+    if (!temItensNaLista) return alert("A lista de compras já está vazia!");
 
-    if(confirm("Deseja limpar toda a lista de compras? Todos os itens voltarão ao status de Disponível no estoque.")) {
-        dadosRestaurante.itens.forEach(item => {
-            item.emFalta = false;
-        });
-        
+    if(confirm("Deseja limpar toda a lista de compras? Todos os itens voltarão ao status de Disponível.")) {
+        dadosRestaurante.itens.forEach(item => item.emFalta = false);
         salvarDados();
         renderizarCompras();
         const inputEstoque = document.getElementById('pesquisa-estoque');
@@ -407,58 +399,46 @@ function limparListaCompras() {
 }
 
 function gerarPDF() {
+    // Exibe o cabeçalho do PDF antes de gerar
+    const pdfHeader = document.querySelector('.pdf-header-info');
+    if(pdfHeader) pdfHeader.style.display = 'block';
+
     const element = document.getElementById('pdf-content');
     const opt = {
-      margin:       10,
-      filename:     `lista_compras_restaurante.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: 10,
+      filename: `lista_compras_stoka.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-
-    html2pdf().from(element).set(opt).save();
+    
+    html2pdf().from(element).set(opt).save().then(() => {
+        // Esconde o cabeçalho novamente após gerar o arquivo
+        if(pdfHeader) pdfHeader.style.display = 'none';
+    });
 }
 
 async function compartilharLista() {
     const itensFalta = dadosRestaurante.itens.filter(item => item.emFalta);
-    
-    if (itensFalta.length === 0) {
-        return alert("A lista de compras está vazia!");
-    }
+    if (itensFalta.length === 0) return alert("A lista de compras está vazia!");
 
-    // Pega a data atual formatada
     const dataAtual = new Date().toLocaleDateString('pt-BR');
+    let texto = `🛒 *Lista de Compras - Stoka (${dadosRestaurante.nomeRestaurante || 'Restaurante'})*\n📅 *Data:* ${dataAtual}\n\n`;
     
-    // Monta o cabeçalho do texto com a data incluída
-    let texto = `🛒 *Lista de Compras - ${dadosRestaurante.nomeRestaurante || 'Restaurante'}*\n`;
-    texto += `📅 *Data:* ${dataAtual}\n\n`;
-    
-    const linhas = document.querySelectorAll('#tabela-compras-corpo tr');
-    
-    linhas.forEach(linha => {
+    document.querySelectorAll('#tabela-compras-corpo tr').forEach(linha => {
         const nomeItem = linha.querySelector('strong').innerText;
         const obsInput = linha.querySelector('.obs-input');
-        
         const obs = (obsInput && obsInput.value.trim() !== '') ? ` - ${obsInput.value.trim()}` : '';
-        
         texto += `▫️ ${nomeItem}${obs}\n`;
     });
 
     if (navigator.share) {
-        try {
-            await navigator.share({
-                title: `Lista de Compras - ${dadosRestaurante.nomeRestaurante}`,
-                text: texto
-            });
-        } catch (error) {
-            console.log('Compartilhamento cancelado ou erro:', error);
-        }
+        try { await navigator.share({ title: `Compras - Stoka`, text: texto }); } 
+        catch (error) { console.log('Compartilhamento cancelado.'); }
     } else {
-        navigator.clipboard.writeText(texto).then(() => {
-            alert("A lista foi copiada! Agora é só abrir o WhatsApp Web e colar na conversa.");
-        }).catch(err => {
-            alert("Erro ao tentar copiar a lista.");
-        });
+        navigator.clipboard.writeText(texto)
+            .then(() => alert("Lista copiada! Cole no WhatsApp."))
+            .catch(() => alert("Erro ao tentar copiar a lista."));
     }
 }
 
@@ -471,21 +451,15 @@ const btnInstalar = document.getElementById('btn-instalar');
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    
-    if (btnInstalar) {
-        btnInstalar.style.display = 'inline-flex';
-    }
+    if (btnInstalar) btnInstalar.style.display = 'inline-flex';
 });
 
 if (btnInstalar) {
     btnInstalar.addEventListener('click', async () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
-            
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                console.log('Aplicativo instalado!');
-            }
+            if (outcome === 'accepted') console.log('Stoka instalado!');
             deferredPrompt = null;
             btnInstalar.style.display = 'none';
         }
