@@ -321,13 +321,7 @@
         </div>
     </div>
 
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').catch(err => console.error('Erro ao registrar PWA:', err));
-        });
-      }
-    </script>
+    
     <script src="script.js"></script>
 </body>
 </html>
