@@ -226,17 +226,15 @@ function renderizarTravaPremium() {
     const headerSelector = document.getElementById('container-seletor-loja');
 
     if (dadosUsuario.plano === 'premium') {
-        lockedView.style.display = 'none';
-        unlockedView.style.display = 'block';
-        if(Object.keys(dadosUsuario.lojas).length > 1) {
-            headerSelector.style.display = 'block';
-        } else {
-            headerSelector.style.display = 'none';
+        if (lockedView) lockedView.style.display = 'none';
+        if (unlockedView) unlockedView.style.display = 'block';
+        if (headerSelector) {
+            headerSelector.style.display = Object.keys(dadosUsuario.lojas).length > 1 ? 'block' : 'none';
         }
     } else {
-        lockedView.style.display = 'block';
-        unlockedView.style.display = 'none';
-        headerSelector.style.display = 'none';
+        if (lockedView) lockedView.style.display = 'block';
+        if (unlockedView) unlockedView.style.display = 'none';
+        if (headerSelector) headerSelector.style.display = 'none';
     }
 }
 
