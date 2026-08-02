@@ -19,7 +19,7 @@ let dadosRestaurante = null;
 // CONFIGURAÇÕES DE PAGAMENTO (MVP MANUAL)
 // ==========================================
 // 1. Cole aqui o link de pagamento gerado lá no painel do Stripe
-const LINK_PAGAMENTO_STRIPE = "https://buy.stripe.com/test_14A3cx3SxcmV8Up8bBeQM00"; 
+const LINK_PAGAMENTO_STRIPE = "https://buy.stripe.com/test_14A3cx3SxcmV8Up8bBeQM00";
 
 // 2. Coloque seu celular com DDI (55) + DDD + Número. Tudo junto, sem espaços.
 const NUMERO_WHATSAPP_ADMIN = "5511949545661"; 
