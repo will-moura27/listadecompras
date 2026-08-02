@@ -1,5 +1,5 @@
 // Mudamos a versão para v2. O celular vai perceber essa mudança!
-const CACHE_NAME = 'stoka-pwa-v4'; 
+const CACHE_NAME = 'stoka-pwa-v5'; 
 const urlsToCache = [
   './',
   './index.html',
