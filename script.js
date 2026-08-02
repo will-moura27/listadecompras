@@ -16,6 +16,16 @@ let dadosUsuario = null;
 let dadosRestaurante = null;
 
 // ==========================================
+// CONFIGURAÇÕES DE PAGAMENTO (MVP MANUAL)
+// ==========================================
+// 1. Cole aqui o link de pagamento gerado lá no painel do Stripe
+const LINK_PAGAMENTO_STRIPE = "https://buy.stripe.com/test_14A3cx3SxcmV8Up8bBeQM00"; 
+
+// 2. Coloque seu celular com DDI (55) + DDD + Número. Tudo junto, sem espaços.
+const NUMERO_WHATSAPP_ADMIN = "5511949545661"; 
+
+
+// ==========================================
 // MONITOR DE SESSÃO
 // ==========================================
 auth.onAuthStateChanged(async (user) => {
@@ -200,24 +210,25 @@ function salvarDados() {
 }
 
 // ==========================================
-// MÓDULO PAYWALL (STOKA PRO)
+// MÓDULO PAYWALL MVP (NOVO)
 // ==========================================
 function abrirModalPagamento() {
-    document.getElementById('modal-checkout').style.display = 'flex';
+    document.getElementById('modal-checkout-manual').style.display = 'flex';
 }
 
 function fecharModalPagamento() {
-    document.getElementById('modal-checkout').style.display = 'none';
+    document.getElementById('modal-checkout-manual').style.display = 'none';
 }
 
-function processarPagamento(e) {
-    e.preventDefault();
-    dadosUsuario.plano = 'premium';
-    salvarDados();
-    
-    alert("🎉 Pagamento Aprovado!\n\nBem-vindo ao Stoka Pro. A criação de múltiplas lojas foi liberada para a sua conta.");
-    fecharModalPagamento();
-    liberarApp();
+function abrirLinkStripe() {
+    window.open(LINK_PAGAMENTO_STRIPE, '_blank');
+}
+
+function enviarComprovanteWhats() {
+    const emailCliente = auth.currentUser ? auth.currentUser.email : "Não identificado";
+    const mensagem = `Olá! Acabei de realizar o pagamento da assinatura do *Stoka Pro*.\n\nMeu e-mail de acesso é: *${emailCliente}*\n\nSegue o comprovante para ativação:`;
+    const url = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
 }
 
 function renderizarTravaPremium() {
@@ -554,8 +565,3 @@ async function compartilharLista() {
     if (navigator.share) { try { await navigator.share({ title: `Compras - Stoka`, text: texto }); } catch (e) {} } 
     else { navigator.clipboard.writeText(texto).then(() => alert("Lista copiada!")).catch(() => alert("Erro ao copiar.")); }
 }
-
-let deferredPrompt;
-const btnInstalar = document.getElementById('btn-instalar');
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; if (btnInstalar) btnInstalar.style.display = 'inline-flex'; });
-if (btnInstalar) { btnInstalar.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; btnInstalar.style.display = 'none'; } }); }

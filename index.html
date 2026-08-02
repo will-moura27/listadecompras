@@ -146,8 +146,6 @@
                 <!-- BOTÃO SAIR FIXO -->
                 <button class="nav-btn btn-sair-sistema" onclick="sairDaConta()" style="color: #ff7675;"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
             </nav>
-
-            <button id="btn-instalar" class="btn btn-primary" style="display: none; position: absolute; right: 20px; top: 30px;"><i class="fa-solid fa-download"></i> App</button>
         </header>
 
         <main class="main-content">
@@ -288,40 +286,31 @@
         </main>
     </div>
 
-    <!-- MODAL DE CHECKOUT PREMIUM -->
-    <div id="modal-checkout" class="modal-overlay" style="display: none;">
+    <!-- MODAL DE CHECKOUT MANUAL (NOVO) -->
+    <div id="modal-checkout-manual" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <button class="close-modal" onclick="fecharModalPagamento()"><i class="fa-solid fa-xmark"></i></button>
             
             <div style="text-align: center; margin-bottom: 20px;">
                 <i class="fa-solid fa-crown" style="font-size: 2.5rem; color: #f1c40f;"></i>
                 <h2 style="margin-top: 10px;">Assine o Stoka Pro</h2>
-                <p style="color: #7f8c8d; font-size: 0.9rem;">Pagamento seguro processado via Stripe.</p>
+                <p style="color: #7f8c8d; font-size: 0.9rem;">Siga os dois passos abaixo para liberar sua conta.</p>
             </div>
 
-            <form onsubmit="processarPagamento(event)">
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label>Número do Cartão</label>
-                    <input type="text" placeholder="0000 0000 0000 0000" required maxlength="19">
-                </div>
-                
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem;">
-                    <div class="form-group">
-                        <label>Validade</label>
-                        <input type="text" placeholder="MM/AA" required maxlength="5">
-                    </div>
-                    <div class="form-group">
-                        <label>CVC</label>
-                        <input type="text" placeholder="123" required maxlength="4">
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-premium-cta" style="width: 100%; justify-content: center; font-size: 1.1rem; padding: 12px;">Pagar R$ 29,90</button>
-            </form>
+            <div class="passo-pagamento" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
+                <h3 style="font-size: 1.1rem; color: var(--primary-color); margin-bottom: 5px;">1. Faça o pagamento</h3>
+                <p style="font-size: 0.9rem; color: #555; margin-bottom: 12px;">Clique no botão abaixo para pagar com Cartão ou PIX na página segura do Stripe.</p>
+                <button class="btn btn-primary" style="width: 100%; justify-content: center; background: #6772e5;" onclick="abrirLinkStripe()"><i class="fa-solid fa-credit-card"></i> Pagar R$ 29,90</button>
+            </div>
+
+            <div class="passo-pagamento" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <h3 style="font-size: 1.1rem; color: var(--primary-color); margin-bottom: 5px;">2. Libere seu acesso</h3>
+                <p style="font-size: 0.9rem; color: #555; margin-bottom: 12px;">Após pagar, envie um print do comprovante no nosso WhatsApp para ativação imediata!</p>
+                <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="enviarComprovanteWhats()"><i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> Enviar Comprovante</button>
+            </div>
         </div>
     </div>
 
-    
     <script src="script.js"></script>
 </body>
 </html>
