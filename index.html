@@ -5,35 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stoka - Gestão Inteligente de Estoque</title>
     
-    <!-- Ícone da Aba do Navegador (Favicon) -->
     <link rel="icon" type="image/svg+xml" href="icone.svg">
-    
-    <!-- Tags do PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="apple-touch-icon" href="icone-192.png">
 
     <link rel="stylesheet" href="style.css">
-    <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Biblioteca html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
-    <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <!-- TELA DE AUTENTICAÇÃO / LOGIN (SPLIT SCREEN) -->
+    <!-- TELA DE AUTENTICAÇÃO (MANTIDA) -->
     <div id="auth-screen" class="auth-container">
         
-        <!-- BANNER ESQUERDO (Apenas PC/Tablet) -->
         <div class="auth-banner">
             <div class="banner-content">
                 <h1>
-                    <!-- LOGO STOKA (SVG Inline) -->
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f1c40f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
@@ -45,10 +37,7 @@
             </div>
         </div>
 
-        <!-- ÁREA DIREITA (Formulários) -->
         <div class="auth-form-area">
-            
-            <!-- MARCA MOBILE (Aparece apenas em celulares) -->
             <div class="mobile-brand">
                 <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#f1c40f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -58,25 +47,20 @@
                 <h1>Stoka</h1>
             </div>
 
-            <!-- CARD DE LOGIN PRINCIPAL -->
             <div id="login-card" class="auth-card">
                 <h2>Acesse sua conta</h2>
                 <p>Bem-vindo de volta ao Stoka.</p>
-                
                 <form onsubmit="fazerLogin(event)">
                     <div class="form-group" style="margin-bottom: 1.2rem;">
                         <label for="login-email">E-mail corporativo</label>
                         <input type="email" id="login-email" placeholder="seu@email.com" required>
                     </div>
-                    
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label for="login-senha">Senha</label>
                         <input type="password" id="login-senha" placeholder="••••••••" required>
                     </div>
-
                     <div class="auth-buttons">
                         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 15px;">Entrar</button>
-                        
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <span style="font-size: 0.9rem; color: #7f8c8d;">Não tem uma conta? <button type="button" class="btn-link" onclick="mostrarTelaCadastro()">Crie seu acesso</button></span>
                             <button type="button" class="btn-link" onclick="mostrarTelaMigracao()">Migrar dados antigos da Chave</button>
@@ -86,27 +70,22 @@
                 </form>
             </div>
 
-            <!-- CARD DE CADASTRO -->
             <div id="register-card" class="auth-card" style="display: none;">
                 <h2>Criar nova conta</h2>
                 <p>Configure seu estabelecimento no Stoka.</p>
-                
                 <form onsubmit="realizarCadastro(event)">
                     <div class="form-group" style="margin-bottom: 1rem;">
-                        <label for="reg-nome-restaurante">Nome do Estabelecimento</label>
+                        <label for="reg-nome-restaurante">Nome da Loja/Matriz</label>
                         <input type="text" id="reg-nome-restaurante" placeholder="Ex: Cantina Central" required>
                     </div>
-                    
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label for="reg-email">E-mail de Acesso</label>
                         <input type="email" id="reg-email" placeholder="seu@email.com" required>
                     </div>
-
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label for="reg-senha">Senha Segura</label>
                         <input type="password" id="reg-senha" placeholder="Mínimo 6 caracteres" required minlength="6">
                     </div>
-
                     <div class="auth-buttons">
                         <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; margin-bottom: 15px;">Criar Conta</button>
                         <div style="text-align: center;">
@@ -116,27 +95,22 @@
                 </form>
             </div>
 
-            <!-- CARD DE MIGRAÇÃO (USUÁRIOS ANTIGOS) -->
             <div id="migrate-card" class="auth-card" style="display: none; border: 2px solid #f39c12;">
                 <h2 style="color: #d35400;">Resgatar Estoque</h2>
                 <p>Digite sua chave antiga para importar os dados e criar um acesso seguro por e-mail.</p>
-                
                 <form onsubmit="migrarContaAntiga(event)">
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label for="mig-chave">Chave Antiga</label>
                         <input type="text" id="mig-chave" placeholder="Ex: cozinha123" required>
                     </div>
-                    
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label for="mig-email">Novo E-mail</label>
                         <input type="email" id="mig-email" placeholder="seu@email.com" required>
                     </div>
-
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label for="mig-senha">Nova Senha</label>
                         <input type="password" id="mig-senha" placeholder="••••••••" required minlength="6">
                     </div>
-
                     <div class="auth-buttons">
                         <button type="submit" class="btn" style="width: 100%; justify-content: center; background: #f39c12; color: white; margin-bottom: 15px;">Importar e Atualizar</button>
                         <div style="text-align: center;">
@@ -145,7 +119,6 @@
                     </div>
                 </form>
             </div>
-
         </div>
     </div>
 
@@ -156,18 +129,25 @@
             
             <div class="logo-area" onclick="document.getElementById('file-input').click()" title="Clique para trocar a logo">
                 <img id="logo-img" src="https://placehold.co/150x150?text=Sua+Logo" alt="Logo Restaurante">
-                <input type="file" id="file-input" accept="image/*" style="display:none" onchange="trocarLogo(event)">
-                <span class="edit-hint"><i class="fa-solid fa-pen"></i> Toque para alterar</span>
+                <input type="file" id="file-input" accept="image/*" style="display:none" onchange="trocarLogoImagem(event)">
+                <span class="edit-hint"><i class="fa-solid fa-pen"></i> Alterar Logo</span>
+            </div>
+
+            <!-- SELETOR DE MÚLTIPLAS LOJAS -->
+            <div class="store-selector-container">
+                <select id="header-seletor-loja" onchange="trocarLojaAtiva(this.value)" title="Alternar entre suas lojas">
+                    <!-- Preenchido via JS -->
+                </select>
             </div>
 
             <nav id="nav-menu" class="nav-menu">
-                <button class="nav-btn active" onclick="switchTab('estoque')"><i class="fa-solid fa-boxes-stacked"></i> Estoque & Itens</button>
-                <button class="nav-btn" onclick="switchTab('compras')"><i class="fa-solid fa-cart-shopping"></i> Lista de Compras</button>
-                <button class="nav-btn" onclick="switchTab('configuracoes')"><i class="fa-solid fa-gear"></i> Configurações</button>
-                <button class="nav-btn" onclick="sairDaConta()" style="color: #c0392b;"><i class="fa-solid fa-right-from-bracket"></i> Sair da Conta</button>
+                <button class="nav-btn active" onclick="switchTab('estoque')"><i class="fa-solid fa-boxes-stacked"></i> Estoque</button>
+                <button class="nav-btn" onclick="switchTab('compras')"><i class="fa-solid fa-cart-shopping"></i> Compras</button>
+                <button class="nav-btn" onclick="switchTab('configuracoes')"><i class="fa-solid fa-gear"></i> Ajustes</button>
+                <button class="nav-btn" onclick="sairDaConta()" style="color: #ff7675;"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
             </nav>
 
-            <button id="btn-instalar" class="btn btn-primary" style="display: none; position: absolute; right: 20px; top: 30px;"><i class="fa-solid fa-download"></i> Instalar App</button>
+            <button id="btn-instalar" class="btn btn-primary" style="display: none; position: absolute; right: 20px; top: 30px;"><i class="fa-solid fa-download"></i> App</button>
         </header>
 
         <main class="main-content">
@@ -177,7 +157,7 @@
                     <h2>Gerenciar Categorias</h2>
                     <div class="form-inline">
                         <input type="text" id="nova-categoria" placeholder="Nome da Categoria (ex: Grãos, Frios)">
-                        <button class="btn btn-primary" onclick="adicionarCategoria()">Adicionar Categoria</button>
+                        <button class="btn btn-primary" onclick="adicionarCategoria()">Adicionar</button>
                     </div>
                 </div>
 
@@ -191,9 +171,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="categoria-item">Categoria:</label>
-                                <select id="categoria-item" required>
-                                    <option value="">Selecione uma categoria</option>
-                                </select>
+                                <select id="categoria-item" required></select>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> Salvar Item</button>
@@ -257,27 +235,51 @@
 
             <!-- ABA CONFIGURAÇÕES -->
             <section id="tab-configuracoes" class="tab-section">
+                
+                <!-- CARD PREMIUM: MÚLTIPLAS LOJAS -->
+                <div class="card premium-card">
+                    <div class="premium-badge"><i class="fa-solid fa-crown"></i> Plano Pro</div>
+                    <h2>🏢 Controle de Múltiplas Lojas</h2>
+                    <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 20px;">Gerencie filiais e depósitos usando a mesma conta. Selecione qual gerenciar lá no menu do topo.</p>
+                    
+                    <div class="form-inline" style="margin-bottom: 20px;">
+                        <input type="text" id="nova-loja-nome" placeholder="Nome da nova loja (Ex: Filial Centro)">
+                        <button class="btn btn-primary" onclick="criarNovaLoja()"><i class="fa-solid fa-plus"></i> Criar Loja</button>
+                    </div>
+                    
+                    <ul id="lista-lojas-config" class="loja-list">
+                        <!-- Preenchido via JS -->
+                    </ul>
+                </div>
+
                 <div class="card">
-                    <h2>Configurações Visuais</h2>
+                    <h2>Identidade Visual desta Loja</h2>
+                    
+                    <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+                        <label for="nome-loja-atual">Renomear Loja Atual:</label>
+                        <div class="form-inline">
+                            <input type="text" id="nome-loja-atual">
+                            <button class="btn btn-primary" onclick="salvarNomeLojaAtual()">Atualizar</button>
+                        </div>
+                    </div>
+
                     <div class="form-group" style="max-width: 300px; margin-bottom: 1rem;">
-                        <label for="cor-principal">Cor Principal do App:</label>
+                        <label for="cor-principal">Cor Tema (Painel):</label>
                         <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
                             <input type="color" id="cor-principal" value="#2c3e50" onchange="mudarCorPrincipal(this.value)" style="width: 60px; height: 40px; border: none; cursor: pointer; border-radius: 4px;">
                             <span id="codigo-cor" style="font-weight: 600; color: var(--text-color);">#2c3e50</span>
                         </div>
                     </div>
-                    <button class="btn btn-primary" onclick="resetarCor()">Restaurar Cor Padrão</button>
+                    <button class="btn btn-primary" style="background-color: #95a5a6;" onclick="resetarCor()">Restaurar Cor Padrão</button>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- Script PWA -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .catch(err => console.error('Erro ao registrar PWA:', err));
+          navigator.serviceWorker.register('./sw.js').catch(err => console.error('Erro ao registrar PWA:', err));
         });
       }
     </script>

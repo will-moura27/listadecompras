@@ -1,4 +1,3 @@
-// Configuração real do Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBrT5rwo37zNGpyjTxA6APfIpFZAjhMhfM",
     authDomain: "gestaorestaurante-31294.firebaseapp.com",
@@ -8,19 +7,13 @@ const firebaseConfig = {
     appId: "1:368047144922:web:5f15beed8ad29776c1cae3"
 };
 
-// Inicialização Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
 let usuarioAtualUID = null;
-let dadosRestaurante = {
-    nomeRestaurante: "Meu Restaurante",
-    logoUrl: "",
-    corPrincipal: "#2c3e50",
-    categorias: ["Grãos e Cereais", "Carnes e Frios", "Hortifrúti", "Limpeza", "Bebidas"],
-    itens: []
-};
+let dadosUsuario = null;      // O Objeto principal (Contém todas as lojas)
+let dadosRestaurante = null;  // O ponteiro (Aponta para a loja ativa que estamos editando agora)
 
 // ==========================================
 // MONITOR DE SESSÃO
@@ -77,8 +70,21 @@ async function realizarCadastro(e) {
         const credencial = await auth.createUserWithEmailAndPassword(email, senha);
         await credencial.user.sendEmailVerification();
         
-        dadosRestaurante.nomeRestaurante = nomeRestaurante;
-        await db.collection("restaurantes").doc(credencial.user.uid).set(dadosRestaurante);
+        // Estrutura SaaS Multi-Lojas
+        const lojaId = 'loja_' + Date.now();
+        const novoUsuario = {
+            lojaAtiva: lojaId,
+            lojas: {
+                [lojaId]: {
+                    nomeRestaurante: nomeRestaurante,
+                    logoUrl: "",
+                    corPrincipal: "#2c3e50",
+                    categorias: ["Grãos e Cereais", "Carnes e Frios", "Hortifrúti", "Limpeza", "Bebidas"],
+                    itens: []
+                }
+            }
+        };
+        await db.collection("restaurantes").doc(credencial.user.uid).set(novoUsuario);
 
         alert("✅ Cadastro realizado!\n\nEnviamos um link de confirmação para o seu e-mail. Você precisa clicar nele antes de entrar.");
         auth.signOut();
@@ -94,12 +100,8 @@ async function fazerLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim();
     const senha = document.getElementById('login-senha').value.trim();
-
-    try {
-        await auth.signInWithEmailAndPassword(email, senha);
-    } catch (error) {
-        alert("E-mail ou senha incorretos.");
-    }
+    try { await auth.signInWithEmailAndPassword(email, senha); } 
+    catch (error) { alert("E-mail ou senha incorretos."); }
 }
 
 async function migrarContaAntiga(e) {
@@ -112,30 +114,31 @@ async function migrarContaAntiga(e) {
         const docRefAntigo = db.collection("restaurantes").doc(chaveAntiga);
         const doc = await docRefAntigo.get();
 
-        if (!doc.exists) {
-            return alert("❌ Chave antiga não encontrada! Verifique se digitou exatamente como usava antes.");
-        }
+        if (!doc.exists) return alert("❌ Chave antiga não encontrada! Verifique se digitou exatamente como usava antes.");
 
         const credencial = await auth.createUserWithEmailAndPassword(email, senha);
         await credencial.user.sendEmailVerification();
 
-        const dadosAntigos = doc.data();
-        await db.collection("restaurantes").doc(credencial.user.uid).set(dadosAntigos);
+        const dadosAntigos = doc.data(); // Pega o formato velho
+        const lojaId = 'loja_' + Date.now();
+        
+        // Embala o dado velho no formato novo Multi-Lojas
+        const novoUsuario = {
+            lojaAtiva: lojaId,
+            lojas: { [lojaId]: dadosAntigos }
+        };
 
+        await db.collection("restaurantes").doc(credencial.user.uid).set(novoUsuario);
         await docRefAntigo.delete();
         localStorage.removeItem('chaveRestaurante');
 
-        alert("🎉 Conta atualizada com sucesso!\nSeus dados foram salvos.\n\nEnviamos um link de confirmação para o seu e-mail. Clique nele para poder acessar seu estoque.");
-        
+        alert("🎉 Conta atualizada com sucesso!\nSeus dados foram salvos.\n\nEnviamos um link de confirmação para o seu e-mail.");
         auth.signOut();
         voltarParaLogin();
 
     } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("Este e-mail já está em uso. Tente outro ou faça login.");
-        } else {
-            alert("Erro na migração: " + error.message);
-        }
+        if (error.code === 'auth/email-already-in-use') alert("Este e-mail já está em uso.");
+        else alert("Erro na migração: " + error.message);
     }
 }
 
@@ -155,16 +158,35 @@ function esqueciSenha() {
 }
 
 // ==========================================
-// FUNÇÕES DE DADOS E INTERFACE (CLOUD FIREBASE)
+// DADOS DA NUVEM & LÓGICA DE MULTI-LOJAS
 // ==========================================
 async function carregarDadosDaNuvem(uid) {
     try {
         const docRef = db.collection("restaurantes").doc(uid);
         const doc = await docRef.get();
+        
         if (doc.exists) {
-            dadosRestaurante = doc.data();
-        } else {
-            await salvarDados();
+            const data = doc.data();
+            
+            // VERIFICA SE É CONTA VELHA (Sem estrutura de lojas) e Migra Automaticamente
+            if (!data.lojas) {
+                const lojaId = 'loja_' + Date.now();
+                dadosUsuario = {
+                    lojaAtiva: lojaId,
+                    lojas: { [lojaId]: data }
+                };
+                await docRef.set(dadosUsuario); // Salva a correção na nuvem
+            } else {
+                dadosUsuario = data;
+            }
+
+            // Define o ponteiro para a loja atual
+            if (!dadosUsuario.lojas[dadosUsuario.lojaAtiva]) {
+                // Se por algum motivo a loja ativa não existir, pega a primeira da lista
+                dadosUsuario.lojaAtiva = Object.keys(dadosUsuario.lojas)[0];
+            }
+            dadosRestaurante = dadosUsuario.lojas[dadosUsuario.lojaAtiva];
+            
         }
     } catch (e) {
         console.warn("Falha na leitura do banco.", e);
@@ -172,13 +194,85 @@ async function carregarDadosDaNuvem(uid) {
 }
 
 function salvarDados() {
-    if (usuarioAtualUID) {
-        db.collection("restaurantes").doc(usuarioAtualUID).set(dadosRestaurante).catch(err => {
+    if (usuarioAtualUID && dadosUsuario) {
+        // O Javascript já atualiza dadosUsuario quando mexemos em dadosRestaurante (por referência).
+        // Então só precisamos mandar dadosUsuario inteiro pra nuvem.
+        db.collection("restaurantes").doc(usuarioAtualUID).set(dadosUsuario).catch(err => {
             console.error("Erro ao salvar:", err);
         });
     }
 }
 
+// ==========================================
+// GERENCIAMENTO DE MÚLTIPLAS LOJAS (PREMIUM)
+// ==========================================
+function trocarLojaAtiva(lojaId) {
+    if (dadosUsuario.lojas[lojaId]) {
+        dadosUsuario.lojaAtiva = lojaId;
+        dadosRestaurante = dadosUsuario.lojas[lojaId];
+        salvarDados(); // Salva qual é a loja ativa agora
+        liberarApp();  // Recarrega toda a interface
+    }
+}
+
+function criarNovaLoja() {
+    const nome = document.getElementById('nova-loja-nome').value.trim();
+    if (!nome) return alert("Digite o nome da nova loja!");
+
+    const novaLojaId = 'loja_' + Date.now();
+    dadosUsuario.lojas[novaLojaId] = {
+        nomeRestaurante: nome,
+        logoUrl: "",
+        corPrincipal: "#2c3e50",
+        categorias: ["Grãos e Cereais", "Carnes e Frios", "Hortifrúti", "Limpeza", "Bebidas"],
+        itens: []
+    };
+    
+    // Já muda direto para a loja nova
+    dadosUsuario.lojaAtiva = novaLojaId;
+    dadosRestaurante = dadosUsuario.lojas[novaLojaId];
+    
+    salvarDados();
+    liberarApp();
+    
+    document.getElementById('nova-loja-nome').value = '';
+    alert("Loja criada com sucesso! Você já está gerenciando o estoque dela.");
+}
+
+function deletarLoja(id) {
+    const qtdeLojas = Object.keys(dadosUsuario.lojas).length;
+    if (qtdeLojas <= 1) {
+        return alert("Você não pode deletar a sua única loja.");
+    }
+    
+    const nomeDaLoja = dadosUsuario.lojas[id].nomeRestaurante;
+    if (confirm(`⚠️ ATENÇÃO: Deseja excluir permanentemente a loja "${nomeDaLoja}" e todo o seu estoque?`)) {
+        delete dadosUsuario.lojas[id];
+        
+        // Se deletou a loja que estava olhando, pula pra outra
+        if (dadosUsuario.lojaAtiva === id) {
+            dadosUsuario.lojaAtiva = Object.keys(dadosUsuario.lojas)[0];
+        }
+        dadosRestaurante = dadosUsuario.lojas[dadosUsuario.lojaAtiva];
+        
+        salvarDados();
+        liberarApp();
+    }
+}
+
+function salvarNomeLojaAtual() {
+    const novoNome = document.getElementById('nome-loja-atual').value.trim();
+    if(novoNome) {
+        dadosRestaurante.nomeRestaurante = novoNome;
+        salvarDados();
+        liberarApp();
+        alert("Nome atualizado com sucesso!");
+    }
+}
+
+// ==========================================
+// RENDERIZAÇÃO DA INTERFACE (APP SCREEN)
+// ==========================================
 function liberarApp() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
@@ -188,8 +282,54 @@ function liberarApp() {
     atualizarSelectCategorias();
     renderizarEstoque();
     renderizarCompras();
+    
+    // Novas Renderizações Premium
+    renderizarSeletorLojasHeader();
+    renderizarListaLojasConfig();
+    
+    // Atualiza input de nome na config
+    document.getElementById('nome-loja-atual').value = dadosRestaurante.nomeRestaurante || "";
 }
 
+function renderizarSeletorLojasHeader() {
+    const selectHeader = document.getElementById('header-seletor-loja');
+    if (!selectHeader) return;
+    
+    selectHeader.innerHTML = '';
+    
+    Object.keys(dadosUsuario.lojas).forEach(id => {
+        const loja = dadosUsuario.lojas[id];
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = loja.nomeRestaurante || 'Sem nome';
+        if (id === dadosUsuario.lojaAtiva) opt.selected = true;
+        selectHeader.appendChild(opt);
+    });
+}
+
+function renderizarListaLojasConfig() {
+    const ul = document.getElementById('lista-lojas-config');
+    if(!ul) return;
+    ul.innerHTML = '';
+    
+    Object.keys(dadosUsuario.lojas).forEach(id => {
+        const loja = dadosUsuario.lojas[id];
+        const isAtual = (id === dadosUsuario.lojaAtiva);
+        const li = document.createElement('li');
+        
+        const nomeHtml = `<span><strong>${loja.nomeRestaurante}</strong> ${isAtual ? '<span class="badge-atual">Estoque Atual</span>' : ''}</span>`;
+        
+        // Só mostra botão de deletar se tiver mais de 1 loja
+        const btnHtml = Object.keys(dadosUsuario.lojas).length > 1 
+            ? `<button class="btn btn-danger btn-sm" onclick="deletarLoja('${id}')" title="Excluir Loja"><i class="fa-solid fa-trash"></i></button>` 
+            : '';
+            
+        li.innerHTML = nomeHtml + btnHtml;
+        ul.appendChild(li);
+    });
+}
+
+// NAVEGAÇÃO DE ABAS E MENU
 function toggleMenu() {
     const navMenu = document.getElementById('nav-menu');
     navMenu.classList.toggle('show');
@@ -220,7 +360,10 @@ function switchTab(tabId) {
     if(tabId === 'compras') renderizarCompras();
 }
 
-function trocarLogo(event) {
+// ==========================================
+// FUNÇÕES DE ESTOQUE, ITENS E COMPRAS
+// ==========================================
+function trocarLogoImagem(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
@@ -237,6 +380,8 @@ function trocarLogo(event) {
 function carregarLogo() {
     if(dadosRestaurante.logoUrl) {
         document.getElementById('logo-img').src = dadosRestaurante.logoUrl;
+    } else {
+        document.getElementById('logo-img').src = "https://placehold.co/150x150?text=Sua+Logo";
     }
 }
 
@@ -259,24 +404,21 @@ function resetarCor() { mudarCorPrincipal("#2c3e50"); }
 function adicionarCategoria() {
     const input = document.getElementById('nova-categoria');
     const nomeCat = input.value.trim();
-
     if(!nomeCat) return alert("Digite o nome da categoria!");
-
-    const categoriaExiste = dadosRestaurante.categorias.some(cat => cat.toLowerCase() === nomeCat.toLowerCase());
-    if (categoriaExiste) return alert("Erro: Já existe uma categoria com este nome!");
-
+    if (dadosRestaurante.categorias.some(cat => cat.toLowerCase() === nomeCat.toLowerCase())) {
+        return alert("Erro: Já existe uma categoria com este nome!");
+    }
     dadosRestaurante.categorias.push(nomeCat);
     salvarDados();
     atualizarSelectCategorias();
     input.value = "";
-    alert("Categoria adicionada com sucesso!");
+    alert("Categoria adicionada!");
 }
 
 function atualizarSelectCategorias() {
     const select = document.getElementById('categoria-item');
     if (!select) return;
     select.innerHTML = '<option value="">Selecione uma categoria</option>';
-    
     dadosRestaurante.categorias.forEach(cat => {
         const option = document.createElement('option');
         option.value = cat;
@@ -291,15 +433,15 @@ function salvarItem(e) {
     const categoria = document.getElementById('categoria-item').value;
 
     if(!nome) return alert("Digite o nome do item!");
-
-    const itemExiste = dadosRestaurante.itens.some(item => item.nome.toLowerCase() === nome.toLowerCase());
-    if (itemExiste) return alert("Erro: Este item já está cadastrado no sistema!");
+    if (dadosRestaurante.itens.some(item => item.nome.toLowerCase() === nome.toLowerCase())) {
+        return alert("Erro: Este item já está cadastrado nesta loja!");
+    }
 
     dadosRestaurante.itens.push({ id: Date.now().toString(), nome, categoria, emFalta: false });
     salvarDados();
     document.getElementById('form-item').reset();
     renderizarEstoque();
-    alert("Item cadastrado com sucesso!");
+    alert("Item cadastrado!");
 }
 
 function renderizarEstoque(filtro = '') {
@@ -313,7 +455,7 @@ function renderizarEstoque(filtro = '') {
     );
 
     if(itensFiltrados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #7f8c8d;">Nenhum item encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #7f8c8d;">Nenhum item encontrado nesta loja.</td></tr>`;
         return;
     }
 
@@ -365,7 +507,7 @@ function renderizarCompras() {
     const itensFalta = dadosRestaurante.itens.filter(item => item.emFalta);
 
     if(itensFalta.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: #7f8c8d;">Nenhum item na lista de compras. 🎉</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: #7f8c8d;">Nenhum item na lista de compras da loja <strong>${dadosRestaurante.nomeRestaurante}</strong>. 🎉</td></tr>`;
         return;
     }
 
@@ -380,8 +522,6 @@ function renderizarCompras() {
 
     const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
     document.getElementById('pdf-data').textContent = new Date().toLocaleDateString('pt-BR', options);
-    
-    // Atualiza o título do PDF com a nova marca
     document.getElementById('pdf-titulo-empresa').textContent = `Lista de Compras - Stoka (${dadosRestaurante.nomeRestaurante || 'Restaurante'})`;
 }
 
@@ -389,7 +529,7 @@ function limparListaCompras() {
     const temItensNaLista = dadosRestaurante.itens.some(item => item.emFalta);
     if (!temItensNaLista) return alert("A lista de compras já está vazia!");
 
-    if(confirm("Deseja limpar toda a lista de compras? Todos os itens voltarão ao status de Disponível.")) {
+    if(confirm("Deseja limpar toda a lista de compras desta loja?")) {
         dadosRestaurante.itens.forEach(item => item.emFalta = false);
         salvarDados();
         renderizarCompras();
@@ -399,21 +539,19 @@ function limparListaCompras() {
 }
 
 function gerarPDF() {
-    // Exibe o cabeçalho do PDF antes de gerar
     const pdfHeader = document.querySelector('.pdf-header-info');
     if(pdfHeader) pdfHeader.style.display = 'block';
 
     const element = document.getElementById('pdf-content');
     const opt = {
       margin: 10,
-      filename: `lista_compras_stoka.pdf`,
+      filename: `lista_compras_${dadosRestaurante.nomeRestaurante}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
     html2pdf().from(element).set(opt).save().then(() => {
-        // Esconde o cabeçalho novamente após gerar o arquivo
         if(pdfHeader) pdfHeader.style.display = 'none';
     });
 }
